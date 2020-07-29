@@ -1,0 +1,19 @@
+       FD MASTER.                                                       00010000
+       01 PREC.                                                         00020000
+           02 PET-ID PIC XXX.                                           00030003
+           02 PET-TYPE PIC 9.                                           00040000
+           02 BREED PIC X(10).                                          00050000
+           02 DOP PIC 9(6).                                             00060000
+           02 COP PIC 9(4)V99.                                          00070000
+           02 QUANT PIC 99.                                             00080000
+           02 FILLER PIC X(52).                                         00090000
+       FD PSFILE.                                                       00100000
+       01 PSREC.                                                        00110000
+           02 SPET-ID PIC 999.                                          00120000
+           02 MRP PIC 9(4)V99.                                          00130000
+           02 QUANTBRT PIC 99.                                          00140000
+           02   FILLER PIC X(69).                                       00150000
+       FD PSFILE1.                                                      00160000
+       01 PSREC1 PIC X(80).                                             00170000
+       FD PSFILE2.                                                      00180000
+       01 PSREC2 PIC X(80).                                             00190000

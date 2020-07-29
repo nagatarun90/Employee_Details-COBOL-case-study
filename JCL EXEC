@@ -1,0 +1,11 @@
+//OZA080V JOB ,,NOTIFY=&SYSUID                                          00010000
+//JOBLIB DD DSN=OZA080.COBOL.LOADLIB,DISP=SHR                           00011009
+//STEP1 EXEC PGM=B5P                                                    00020010
+//DD1 DD DSN=OZA080.MASTER.KSDS,DISP=SHR                                00031011
+//DD2 DD DSN=OZA080.PSFILE,DISP=SHR                                     00032011
+//DD3 DD DSN=OZA080.PSFILE1,DISP=OLD                                    00032111
+//DD4 DD DSN=OZA080.PSFILE2,DISP=OLD                                    00032211
+//SYSOUT DD SYSOUT=*                                                    00033000
+//SYSPRINT DD SYSOUT=*                                                  00034000
+//SYSIN DD *                                                            00035000
+/*                                                                      00036000

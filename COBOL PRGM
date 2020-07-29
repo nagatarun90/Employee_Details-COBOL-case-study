@@ -1,0 +1,197 @@
+       IDENTIFICATION DIVISION.                                         00010000
+       PROGRAM-ID. MAINPRGM.                                            00020000
+       ENVIRONMENT DIVISION.                                            00030000
+       INPUT-OUTPUT SECTION.                                            00040000
+       FILE-CONTROL.                                                    00050020
+      ****************KSDS MASTER FILE***************                   00051099
+           SELECT MASTER ASSIGN TO DD1                                  00060014
+           ORGANIZATION IS INDEXED                                      00070000
+           ACCESS MODE IS RANDOM                                        00080050
+           RECORD KEY IS PET-ID IN PREC                                 00090021
+      *************PS SALE TRANSACTION FILE***********                  00091099
+           FILE STATUS IS FSM.                                          00100014
+           SELECT PSFILE ASSIGN TO DD2                                  00110001
+           ORGANIZATION IS SEQUENTIAL                                   00120012
+           ACCESS MODE IS SEQUENTIAL                                    00130012
+           FILE STATUS IS FSS.                                          00140014
+      **************PS PROCESEED FILE*************                      00141099
+           SELECT PSFILE1 ASSIGN TO DD3                                 00150018
+           ORGANIZATION IS SEQUENTIAL                                   00160018
+           ACCESS MODE IS SEQUENTIAL                                    00170018
+           FILE STATUS IS FSS1.                                         00180018
+      ****************UNPROCESSED ****************                      00181099
+           SELECT PSFILE2 ASSIGN TO DD4                                 00190018
+           ORGANIZATION IS SEQUENTIAL                                   00200018
+           ACCESS MODE IS SEQUENTIAL                                    00210018
+           FILE STATUS IS FSS2.                                         00220018
+       DATA DIVISION.                                                   00230001
+       FILE SECTION.                                                    00240001
+       COPY COPYBOOK.                                                   00250099
+       WORKING-STORAGE SECTION.                                         00260099
+       77 FSM        PIC 99.                                            00450099
+       77 FSS        PIC 99.                                            00460099
+       77 FSS1       PIC 99.                                            00470099
+       77 FSS2       PIC 99.                                            00480099
+       77 FLAG       PIC 9 VALUE 0.                                     00490099
+       77 CNT        PIC 99.                                            00500099
+       77 CNT1       PIC S9(4)V99 VALUE 0.                              00510099
+       77 TOTALPRICE PIC S9(4)V99.                                      00511095
+       01 DATE-2.                                                       00520064
+           05        PIC X(58) VALUE SPACES.                            00530075
+           05        PIC X(6) VALUE 'DATE:'.                            00540073
+           05 DATE-1 PIC XX/XX/XX.                                      00550073
+       01 HEAD-2     PIC X(80) VALUE 'PETTYPE:                PAGE NO:'.00560099
+       01 DATE-3     PIC 999999.                                        00570099
+       01 HEAD-3    PIC X(80) VALUE 'PET-ID BREED DOP COP QUANT PROFIT'.00580099
+       01 FILLER     PIC X(80).                                         00590099
+       01 HEAD-4     PIC X(80) VALUE ALL '-'.                           00600099
+       01 HEAD-5     PIC X(80) VALUE 'TOTAL NUMBER OF SOLD:'.           00610099
+       01 HEAD-6     PIC X(80) VALUE 'TOTAL PROFIT:'.                   00620099
+       01 WS-DET.                                                       00630091
+           02 PET-ID   PIC 999.                                         00640073
+           02          PIC XXX.                                         00650091
+           02 BREED    PIC X(10).                                       00680073
+           02          PIC XXX.                                         00690091
+           02 DOP      PIC 9(6).                                        00700073
+           02          PIC XX.                                          00710014
+           02 PRICE    PIC 9(4)V99.                                     00720092
+           02          PIC XX.                                          00730091
+           02 QUANTITY PIC 99.                                          00740091
+           02          PIC XX(6).                                       00750092
+           02 PROFIT   PIC S9(5)V99.                                    00760090
+       PROCEDURE DIVISION.                                              00810003
+       MAIN-PARA.                                                       00820003
+      **********MAIN LOGIC*****************                             00821099
+            PERFORM OPEN-PARA                                           00830071
+              ACCEPT DATE-1 FROM DATE                                   00840073
+              MOVE DATE-3 TO DATE-2.                                    00850073
+            IF FSM = 0 AND FSS = 0 AND FSS1 = 0 AND FSS2 = 0            00860045
+              DISPLAY "FSM" FSM "FSS" FSS "FSS1" FSS1 "FSS2" FSS2       00870073
+              PERFORM READ-PARA UNTIL FSS NOT = 0                       00880019
+            ELSE                                                        00890036
+              DISPLAY 'FILE STATUS ' FSM SPACE FSS SPACE FSS1 SPACE FSS200900036
+            END-IF.                                                     00910051
+            PERFORM CLOSE-PARA                                          00920096
+            STOP RUN.                                                   00930013
+       OPEN-PARA.                                                       00940003
+      ************OPENING OF ALL FILES*************                     00941099
+            OPEN I-O    MASTER.                                         00950099
+            OPEN INPUT  PSFILE.                                         00960099
+            OPEN OUTPUT PSFILE1.                                        00970057
+            OPEN OUTPUT PSFILE2.                                        00980036
+       READ-PARA.                                                       00990003
+      *************READING THE SALES TRANSACTION FILE**********         00991099
+            READ PSFILE                                                 01000014
+              AT END PERFORM SUMMARY                                    01010014
+              NOT AT END                                                01020014
+                DISPLAY 'READ SUC' PSREC                                01030073
+              IF MRP IN PSREC NOT = ZEROS                               01040073
+                    AND QUANT NOT = ZEROS                               01050073
+                        PERFORM READ-MASTER                             01060014
+              ELSE                                                      01070073
+                        PERFORM UNPROC-PARA                             01080014
+              END-IF                                                    01090074
+            END-READ.                                                   01100003
+            DISPLAY 'READ STS ' FSS.                                    01110055
+       READ-MASTER.                                                     01120014
+      ************READING THE MASTER KSDS FILE*************             01121099
+            MOVE SPET-ID IN PSREC TO PET-ID IN PREC                     01130027
+            READ MASTER                                                 01140014
+                 INVALID KEY PERFORM UNPROC-PARA                        01150014
+                 NOT INVALID KEY                                        01160014
+                     DISPLAY 'KSREC ' PREC                              01170044
+                     IF QUANT IN PREC  >= QUANTBRT IN PSREC             01180027
+                        DISPLAY 'PROC:' QUANT SPACE QUANTBRT IN PSREC   01190055
+                        PERFORM REWRITE-PARA                            01200014
+                        PERFORM PROC-PARA                               01210014
+                     ELSE                                               01220014
+                        DISPLAY 'UNPROC:' QUANT SPACE QUANTBRT IN PSREC 01230055
+                        PERFORM UNPROC-PARA                             01240014
+                        DISPLAY 'UNPROC STS ' FSS2                      01250055
+                     END-IF                                             01260014
+            END-READ.                                                   01270014
+       PROC-PARA.                                                       01280014
+      ****IF DATA VALID IT WILL COME TO THIS PARA*********              01281099
+            COMPUTE PROFIT  =                                           01290083
+      -              (MRP IN PSREC - COP IN PREC) * QUANTBRT IN PSREC   01300079
+            COMPUTE TOTALPRICE = MRP IN PSREC * QUANTBRT IN PSREC       01310079
+            DISPLAY 'PETTYPE' PET-TYPE IN PREC                          01320044
+            EVALUATE PET-TYPE IN PREC                                   01330027
+                WHEN 1 PERFORM CAT-PARA                                 01340014
+                WHEN 2 PERFORM DOG-PARA                                 01350014
+                WHEN 3 PERFORM BIRD-PARA                                01360014
+                WHEN 4 PERFORM FISH-PARA                                01370014
+            END-EVALUATE.                                               01380014
+       UNPROC-PARA.                                                     01390023
+      *********IF DATA INVALID***********                               01391099
+            WRITE PSREC2 FROM PSREC.                                    01400055
+       SUMMARY.                                                         01410076
+      **********REPORT END DATA***********                              01411099
+            IF SPET-ID IN PSREC= PET-ID IN PREC THEN                    01420076
+               COMPUTE CNT = QUANTBRT IN PSREC + CNT                    01430087
+               COMPUTE CNT1 = PROFIT + CNT1                             01440088
+            END-IF.                                                     01450076
+       CAT-PARA.                                                        01460076
+            DISPLAY 'CAT PARA' FLAG                                     01470076
+            IF FLAG = 0                                                 01480076
+               MOVE 1 TO FLAG                                           01490076
+               PERFORM   SUMMARY                                        01500099
+               MOVE 1 TO PET-TYPE IN PREC                               01510076
+               PERFORM   HEAD-PARA                                      01520099
+            END-IF.                                                     01530076
+            PERFORM WRITE-PARA                                          01540076
+            PERFORM HEAD-PARA2.                                         01550076
+       DOG-PARA.                                                        01560076
+            IF FLAG NOT = 2                                             01570076
+               MOVE 2 TO FLAG                                           01580076
+               PERFORM SUMMARY                                          01590076
+               MOVE 2 TO PET-TYPE IN PREC                               01600076
+               PERFORM HEAD-PARA                                        01610076
+            END-IF.                                                     01620076
+            PERFORM WRITE-PARA.                                         01630076
+            PERFORM HEAD-PARA2.                                         01640076
+       BIRD-PARA.                                                       01650076
+            IF FLAG NOT = 3                                             01660076
+               MOVE 3 TO FLAG                                           01670076
+               PERFORM SUMMARY                                          01680076
+               MOVE 3 TO PET-TYPE IN PREC                               01690076
+               PERFORM HEAD-PARA                                        01700076
+            END-IF.                                                     01710076
+            PERFORM WRITE-PARA                                          01720076
+            PERFORM HEAD-PARA2.                                         01730076
+       FISH-PARA.                                                       01740076
+            IF FLAG NOT = 4                                             01750076
+               MOVE 4 TO FLAG                                           01760076
+               PERFORM SUMMARY                                          01770076
+               MOVE 4 TO PET-TYPE IN PREC                               01780076
+               PERFORM HEAD-PARA                                        01790076
+            END-IF.                                                     01800076
+            PERFORM WRITE-PARA                                          01810076
+            PERFORM HEAD-PARA2.                                         01820076
+       HEAD-PARA.                                                       01830088
+      *****HEADING OF THE REPORT FILE********                           01831099
+             WRITE PSREC1 FROM DATE-2                                   01840064
+             WRITE PSREC1 FROM HEAD-2                                   01850024
+             WRITE PSREC1 FROM HEAD-3.                                  01860048
+       HEAD-PARA2.                                                      01870047
+             WRITE PSREC1 FROM HEAD-4                                   01880024
+             WRITE PSREC1 FROM HEAD-5                                   01890024
+             WRITE PSREC1 FROM HEAD-6.                                  01900024
+       WRITE-PARA.                                                      01910015
+             MOVE PET-ID   IN PREC  TO PET-ID   IN WS-DET.              01920099
+             MOVE BREED    IN PREC  TO BREED    IN WS-DET.              01940099
+             MOVE DOP      IN PREC  TO DOP      IN WS-DET.              01950099
+             MOVE MRP      IN PSREC TO PRICE    IN WS-DET.              01960099
+             MOVE QUANTBRT IN PSREC TO QUANTITY IN WS-DET.              01980093
+             WRITE PSREC1  FROM WS-DET.                                 01990099
+       REWRITE-PARA.                                                    02000024
+             IF SPET-ID     IN PSREC = PET-ID IN PREC THEN              02010099
+              COMPUTE QUANT IN PREC = QUANT IN PREC - QUANTBRT IN PSREC 02020031
+              REWRITE PREC                                              02030049
+             ELSE                                                       02040024
+              NEXT SENTENCE                                             02050073
+             END-IF.                                                    02060029
+       CLOSE-PARA.                                                      02070009
+      ********CLOSING ALL THE OPENED FILES*********                     02071099
+             CLOSE MASTER.                                              02080073
+             CLOSE PSFILE.                                              02090073

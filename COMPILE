@@ -1,0 +1,6 @@
+//OZA080J JOB ,,NOTIFY=&SYSUID                                          00010018
+// SET A=MAINPRGM                                                       00020051
+//STEP1 EXEC IGYWCL,PARM.COBOL='LIB,OBJ,APOST,DYNAM'                    00030003
+//COBOL.SYSIN DD DSN=OZA080.PET.PDS(&A),DISP=SHR                        00040046
+//COBOL.SYSLIB DD DSN=OZA080.PET.PDS,DISP=SHR                           00041049
+//LKED.SYSLMOD DD DSN=OZA080.COBOL.LOADLIB(&A),DISP=OLD                 00050004
